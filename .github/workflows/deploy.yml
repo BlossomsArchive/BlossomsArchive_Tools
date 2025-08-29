@@ -14,6 +14,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Insert AdSense + Analytics code
+        run: |
+          ADSENSE_CODE="${{ secrets.ADSENSE_CODE }}"
+          ANALYTICS_CODE="${{ secrets.ANALYTICS_CODE }}"
+
+          for file in $(find ./ -name "*.html"); do
+            sed -i "s|<!-- ADSENSE_CODE -->|$ADSENSE_CODE|" "$file"
+            sed -i "s|<!-- ANALYTICS_CODE -->|$ANALYTICS_CODE|" "$file"
+          done
+
       - name: Clear FTP Directory
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
