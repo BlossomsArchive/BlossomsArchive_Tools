@@ -64,7 +64,7 @@ input[type="file"] {
 
 .download-button {
     display: inline-block;
-    background: #fdb4eb;
+    background: lightskyblue;
     font-weight: bold;
     padding: 10px 20px;
     border-radius: 6px;
@@ -75,7 +75,7 @@ input[type="file"] {
 }
 
 .download-button:hover {
-    background: #e689c5;
+    background: rgb(90, 172, 204);
 }
 
 .frame-color-selector {
