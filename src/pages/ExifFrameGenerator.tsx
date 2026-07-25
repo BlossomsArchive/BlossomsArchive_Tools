@@ -637,7 +637,7 @@ export default function ExifFrame() {
                 finalCanvasW / 2,
                 textCenterY,
             );
-        } else if (framePosition() === "left" || framePosition() === "right") {
+} else if (framePosition() === "left" || framePosition() === "right") {
             const x =
                 framePosition() === "left"
                     ? Math.round(textSpace * 0.5) + realFrameWidth
@@ -647,15 +647,36 @@ export default function ExifFrame() {
 
             ctx.save();
             ctx.fillStyle = tColor;
-            const combinedLine1 = `${prefix}${textLine1Main}`;
-            if (combinedLine1 && textLine2) {
-                drawVerticalText(
-                    ctx,
-                    combinedLine1,
-                    x + (fontSize1 / 2 + gap / 2),
-                    y,
-                    font1Main,
-                );
+
+            const hasLine1 = prefix || textLine1Main;
+
+            const drawCombinedVertical = (vx: number, vy: number) => {
+                ctx.save();
+                ctx.translate(vx, vy);
+                ctx.rotate(Math.PI / 2);
+
+                ctx.font = font1Prefix;
+                const pW = prefix ? ctx.measureText(prefix).width : 0;
+                ctx.font = font1Main;
+                const mW = textLine1Main ? ctx.measureText(textLine1Main).width : 0;
+
+                let sX = -(pW + mW) / 2;
+                ctx.textAlign = "left";
+
+                if (prefix) {
+                    ctx.font = font1Prefix;
+                    ctx.fillText(prefix, sX, 0);
+                    sX += pW;
+                }
+                if (textLine1Main) {
+                    ctx.font = font1Main;
+                    ctx.fillText(textLine1Main, sX, 0);
+                }
+                ctx.restore();
+            };
+
+            if (hasLine1 && textLine2) {
+                drawCombinedVertical(x + (fontSize1 / 2 + gap / 2), y);
                 drawVerticalText(
                     ctx,
                     textLine2,
@@ -663,15 +684,18 @@ export default function ExifFrame() {
                     y,
                     font2,
                 );
-            } else {
+            } else if (hasLine1) {
+                drawCombinedVertical(x, y);
+            } else if (textLine2) {
                 drawVerticalText(
                     ctx,
-                    combinedLine1 || textLine2,
+                    textLine2,
                     x,
                     y,
-                    font1Main,
+                    font2,
                 );
             }
+
             ctx.restore();
         } else {
             const y =
