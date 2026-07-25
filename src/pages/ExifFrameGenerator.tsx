@@ -23,6 +23,7 @@ export default function ExifFrame() {
 
     const [showMobileSaveModal, setShowMobileSaveModal] = createSignal(false);
     const [downloadImageSrc, setDownloadImageSrc] = createSignal("");
+    const [uploadedImageSrc, setUploadedImageSrc] = createSignal("");
 
     const [useCustomTitle, setUseCustomTitle] = createSignal(false);
     const [customTitleLine1, setCustomTitleLine1] =
@@ -955,6 +956,7 @@ export default function ExifFrame() {
             sourceImage = img;
             setHasImage(true);
             setImageRotation(0);
+            setUploadedImageSrc(img.src);
         };
         img.src = URL.createObjectURL(file);
     };
@@ -994,6 +996,35 @@ export default function ExifFrame() {
     };
     const rotateImage = () => {
         setImageRotation((prev) => (prev + 90) % 360);
+    };
+
+    const previewLine1 = () => {
+        if (useCustomTitle()) return customTitleLine1() || "タイトル 1行目";
+        const parts = [];
+        if (showCamera() && cameraModel()) parts.push(cameraModel());
+        if (showLens() && lensModel()) parts.push(lensModel());
+        const mainStr = parts.join(" ");
+        return (showPrefix() ? prefixText() : "") + mainStr || "Camera Model";
+    };
+
+    const previewLine2 = () => {
+        if (useCustomTitle()) return customTitleLine2() || "サブタイトル 2行目";
+        const parts = [];
+        if (showFocal() && focalLength()) parts.push(`${focalLength()}mm`);
+        if (showFNumber() && fNumber()) parts.push(`f/${fNumber()}`);
+        if (showSpeed() && shutterSpeed()) parts.push(shutterSpeed());
+        if (showIso() && isoValue()) parts.push(`ISO${isoValue()}`);
+        return parts.join(" ") || "50mm f/2.8";
+    };
+
+    const getMiniBgColor = () => {
+        if (isAdvancedMode()) return customFrameColor();
+        return frameColor() === "white" ? "#ffffff" : "#1e293b";
+    };
+
+    const getMiniTextColor = () => {
+        if (isAdvancedMode()) return customTextColor();
+        return frameColor() === "white" ? "#1e293b" : "#f8fafc";
     };
 
     return (
@@ -1080,21 +1111,6 @@ export default function ExifFrame() {
                                             黒
                                         </label>
                                     </div>
-                                </div>
-                                <div class="border-t border-base-300/60 pt-2 mt-1 flex items-center justify-between">
-                                    <span class="font-bold text-base-content/80">
-                                        📸 チェキ風フレーム
-                                    </span>
-                                    <input
-                                        type="checkbox"
-                                        checked={isChekiMode()}
-                                        onChange={(e) => {
-                                            setIsChekiMode(
-                                                e.currentTarget.checked,
-                                            );
-                                        }}
-                                        class="toggle toggle-primary toggle-xs"
-                                    />
                                 </div>
                             </div>
                         </Show>
@@ -1471,102 +1487,346 @@ export default function ExifFrame() {
                             </details>
                         </div>
 
-                        <Show when={!isChekiMode()}>
-                            <div class="form-control border border-base-300 p-3 rounded-xl bg-base-200/30 flex flex-col gap-2 text-xs">
-                                <div class="flex items-center justify-between border-b border-base-300 pb-1">
-                                    <span class="font-bold text-base-content/80 text-[11px]">
-                                        📍 配置設定
-                                    </span>
-                                </div>
-                                <div class="flex items-center justify-between gap-2 py-0.5 text-base-content">
-                                    <span class="text-base-content/60 font-medium text-[10px]">
-                                        帯の位置:
-                                    </span>
-                                    <div class="flex gap-2">
-                                        <For
-                                            each={[
-                                                { val: "bottom", label: "下" },
-                                                { val: "top", label: "上" },
-                                                { val: "left", label: "左" },
-                                                { val: "right", label: "右" },
-                                            ]}
-                                        >
-                                            {(pos) => (
-                                                <label class="flex gap-1 items-center cursor-pointer font-medium">
-                                                    <input
-                                                        type="radio"
-                                                        name="pos"
-                                                        checked={
-                                                            framePosition() ===
-                                                            pos.val
-                                                        }
-                                                        onChange={() =>
-                                                            handleOptionChange(
-                                                                setFramePosition,
-                                                                pos.val,
-                                                            )
-                                                        }
-                                                        class="radio radio-primary radio-xs"
-                                                    />
-                                                    {pos.label}
-                                                </label>
-                                            )}
-                                        </For>
-                                    </div>
-                                </div>
-                                <div
-                                    class="flex items-center justify-between gap-2 py-0.5 border-t border-base-300 mt-0.5 pt-1.5 transition-all duration-200 text-base-content"
-                                    classList={{
-                                        "opacity-40 pointer-events-none select-none":
-                                            framePosition() === "left" ||
-                                            framePosition() === "right",
-                                    }}
+                        <div class="form-control border border-base-300 p-3.5 rounded-xl bg-base-200/30 flex flex-col gap-3 text-xs">
+                            <div class="flex items-center justify-between border-b border-base-300 pb-2">
+                                <span class="font-bold text-base-content/80 text-[11px] flex items-center gap-1">
+                                    📍 文字の配置設定
+                                </span>
+                                <span class="text-[9px] text-base-content/50 font-medium">
+                                    選択して変更
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2">
+                                <For
+                                    each={[
+                                        {
+                                            pos: "bottom",
+                                            align: "left",
+                                            label: "下・左",
+                                            alignClass: "justify-start",
+                                        },
+                                        {
+                                            pos: "bottom",
+                                            align: "center",
+                                            label: "下・中央",
+                                            alignClass: "justify-center",
+                                        },
+                                        {
+                                            pos: "bottom",
+                                            align: "right",
+                                            label: "下・右",
+                                            alignClass: "justify-end",
+                                        },
+                                        {
+                                            pos: "top",
+                                            align: "left",
+                                            label: "上・左",
+                                            alignClass: "justify-start",
+                                        },
+                                        {
+                                            pos: "top",
+                                            align: "center",
+                                            label: "上・中央",
+                                            alignClass: "justify-center",
+                                        },
+                                        {
+                                            pos: "top",
+                                            align: "right",
+                                            label: "上・右",
+                                            alignClass: "justify-end",
+                                        },
+                                        {
+                                            pos: "left",
+                                            align: "left",
+                                            label: "左 (縦)",
+                                            isVertical: true,
+                                        },
+                                        {
+                                            pos: "right",
+                                            align: "left",
+                                            label: "右 (縦)",
+                                            isVertical: true,
+                                        },
+                                        { label: "チェキ風", isCheki: true },
+                                    ]}
                                 >
-                                    <span class="text-base-content/60 font-medium text-[10px]">
-                                        文字寄せ:
-                                    </span>
-                                    <div class="flex gap-3">
-                                        <For
-                                            each={[
-                                                { val: "left", label: "左" },
-                                                {
-                                                    val: "center",
-                                                    label: "中央",
-                                                },
-                                                { val: "right", label: "右" },
-                                            ]}
-                                        >
-                                            {(align) => (
-                                                <label class="flex gap-1 items-center cursor-pointer font-medium">
-                                                    <input
-                                                        type="radio"
-                                                        name="align"
-                                                        checked={
-                                                            textAlign() ===
-                                                            align.val
-                                                        }
-                                                        onChange={() =>
+                                    {(item) => {
+                                        const isSelected = () => {
+                                            if (item.isCheki) {
+                                                return isChekiMode();
+                                            }
+                                            if (isChekiMode()) {
+                                                return false;
+                                            }
+                                            if (item.isVertical) {
+                                                return (
+                                                    framePosition() === item.pos
+                                                );
+                                            }
+                                            return (
+                                                framePosition() === item.pos &&
+                                                textAlign() === item.align
+                                            );
+                                        };
+
+                                        return (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (item.isCheki) {
+                                                        setIsChekiMode(true);
+                                                    } else {
+                                                        setIsChekiMode(false);
+                                                        handleOptionChange(
+                                                            setFramePosition,
+                                                            item.pos,
+                                                        );
+                                                        if (!item.isVertical) {
                                                             handleOptionChange(
                                                                 setTextAlign,
-                                                                align.val,
-                                                            )
+                                                                item.align,
+                                                            );
                                                         }
-                                                        class="radio radio-primary radio-xs"
-                                                        disabled={
-                                                            framePosition() ===
-                                                                "left" ||
-                                                            framePosition() ===
-                                                                "right"
+                                                    }
+                                                }}
+                                                class={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all cursor-pointer ${
+                                                    isSelected()
+                                                        ? "border-primary bg-primary/10 text-primary font-bold ring-2 ring-primary/30 shadow-xs"
+                                                        : "border-base-300 bg-base-100 hover:bg-base-200/80 text-base-content/70"
+                                                }`}
+                                                title={`${item.label}に配置`}
+                                            >
+                                                {/* Mini Preview Box */}
+                                                <div class="w-full aspect-[4/3] rounded-md border border-base-300 bg-slate-950 relative overflow-hidden flex flex-col mb-1.5 shadow-2xs select-none">
+                                                    <Show when={item.isCheki}>
+                                                        {/* Cheki style mini preview */}
+                                                        <div
+                                                            class="w-full h-full flex flex-col p-1 transition-colors"
+                                                            style={{
+                                                                "background-color":
+                                                                    getMiniBgColor(),
+                                                            }}
+                                                        >
+                                                            <div class="flex-1 bg-slate-900 rounded-xs overflow-hidden relative flex items-center justify-center">
+                                                                <Show
+                                                                    when={uploadedImageSrc()}
+                                                                    fallback={
+                                                                        <span class="text-[8px] opacity-40">
+                                                                            📸
+                                                                        </span>
+                                                                    }
+                                                                >
+                                                                    <img
+                                                                        src={uploadedImageSrc()}
+                                                                        class="w-full h-full object-cover transition-transform"
+                                                                        style={{
+                                                                            transform: `rotate(${imageRotation()}deg)`,
+                                                                        }}
+                                                                    />
+                                                                </Show>
+                                                            </div>
+                                                            <div
+                                                                class="h-3 flex flex-col items-center justify-center pt-0.5 leading-none"
+                                                                style={{
+                                                                    color: getMiniTextColor(),
+                                                                }}
+                                                            >
+                                                                <div class="w-2/3 h-0.5 rounded-full bg-current opacity-80"></div>
+                                                            </div>
+                                                        </div>
+                                                    </Show>
+
+                                                    <Show
+                                                        when={
+                                                            !item.isCheki &&
+                                                            item.pos ===
+                                                                "bottom"
                                                         }
-                                                    />
-                                                    {align.label}
-                                                </label>
-                                            )}
-                                        </For>
-                                    </div>
-                                </div>
+                                                    >
+                                                        <div class="flex-1 bg-slate-900 overflow-hidden relative flex items-center justify-center">
+                                                            <Show
+                                                                when={uploadedImageSrc()}
+                                                                fallback={
+                                                                    <span class="text-[9px] opacity-30">
+                                                                        🖼️
+                                                                    </span>
+                                                                }
+                                                            >
+                                                                <img
+                                                                    src={uploadedImageSrc()}
+                                                                    class="w-full h-full object-cover transition-transform"
+                                                                    style={{
+                                                                        transform: `rotate(${imageRotation()}deg)`,
+                                                                    }}
+                                                                />
+                                                            </Show>
+                                                        </div>
+                                                        <div
+                                                            class="h-3.5 border-t flex flex-col justify-center px-1.5 py-0.5 leading-none transition-colors"
+                                                            style={{
+                                                                "background-color":
+                                                                    getMiniBgColor(),
+                                                                "border-color":
+                                                                    "rgba(0,0,0,0.1)",
+                                                                color: getMiniTextColor(),
+                                                            }}
+                                                        >
+                                                            <div class="w-full flex flex-col gap-0.5">
+                                                                <div
+                                                                    class={`w-full flex ${item.alignClass}`}
+                                                                >
+                                                                    <div class="w-2/3 h-0.5 rounded-full bg-current opacity-85"></div>
+                                                                </div>
+                                                                <div
+                                                                    class={`w-full flex ${item.alignClass}`}
+                                                                >
+                                                                    <div class="w-1/3 h-0.5 rounded-full bg-current opacity-55"></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </Show>
+
+                                                    <Show
+                                                        when={
+                                                            !item.isCheki &&
+                                                            item.pos === "top"
+                                                        }
+                                                    >
+                                                        <div
+                                                            class="h-3.5 border-b flex flex-col justify-center px-1.5 py-0.5 leading-none transition-colors"
+                                                            style={{
+                                                                "background-color":
+                                                                    getMiniBgColor(),
+                                                                "border-color":
+                                                                    "rgba(0,0,0,0.1)",
+                                                                color: getMiniTextColor(),
+                                                            }}
+                                                        >
+                                                            <div class="w-full flex flex-col gap-0.5">
+                                                                <div
+                                                                    class={`w-full flex ${item.alignClass}`}
+                                                                >
+                                                                    <div class="w-2/3 h-0.5 rounded-full bg-current opacity-85"></div>
+                                                                </div>
+                                                                <div
+                                                                    class={`w-full flex ${item.alignClass}`}
+                                                                >
+                                                                    <div class="w-1/3 h-0.5 rounded-full bg-current opacity-55"></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex-1 bg-slate-900 overflow-hidden relative flex items-center justify-center">
+                                                            <Show
+                                                                when={uploadedImageSrc()}
+                                                                fallback={
+                                                                    <span class="text-[9px] opacity-30">
+                                                                        🖼️
+                                                                    </span>
+                                                                }
+                                                            >
+                                                                <img
+                                                                    src={uploadedImageSrc()}
+                                                                    class="w-full h-full object-cover transition-transform"
+                                                                    style={{
+                                                                        transform: `rotate(${imageRotation()}deg)`,
+                                                                    }}
+                                                                />
+                                                            </Show>
+                                                        </div>
+                                                    </Show>
+
+                                                    <Show
+                                                        when={
+                                                            !item.isCheki &&
+                                                            item.pos === "left"
+                                                        }
+                                                    >
+                                                        <div class="w-full h-full flex flex-row">
+                                                            <div
+                                                                class="w-4 h-full border-r flex flex-row items-center justify-center py-1 gap-[2px] transition-colors"
+                                                                style={{
+                                                                    "background-color":
+                                                                        getMiniBgColor(),
+                                                                    "border-color":
+                                                                        "rgba(0,0,0,0.1)",
+                                                                    color: getMiniTextColor(),
+                                                                }}
+                                                            >
+                                                                <div class="w-0.5 h-3/5 rounded-full bg-current opacity-60"></div>
+                                                                <div class="w-0.5 h-4/5 rounded-full bg-current opacity-90"></div>
+                                                            </div>
+                                                            <div class="flex-1 bg-slate-900 overflow-hidden relative flex items-center justify-center">
+                                                                <Show
+                                                                    when={uploadedImageSrc()}
+                                                                    fallback={
+                                                                        <span class="text-[9px] opacity-30">
+                                                                            🖼️
+                                                                        </span>
+                                                                    }
+                                                                >
+                                                                    <img
+                                                                        src={uploadedImageSrc()}
+                                                                        class="w-full h-full object-cover transition-transform"
+                                                                        style={{
+                                                                            transform: `rotate(${imageRotation()}deg)`,
+                                                                        }}
+                                                                    />
+                                                                </Show>
+                                                            </div>
+                                                        </div>
+                                                    </Show>
+
+                                                    <Show
+                                                        when={
+                                                            !item.isCheki &&
+                                                            item.pos === "right"
+                                                        }
+                                                    >
+                                                        <div class="w-full h-full flex flex-row">
+                                                            <div class="flex-1 bg-slate-900 overflow-hidden relative flex items-center justify-center">
+                                                                <Show
+                                                                    when={uploadedImageSrc()}
+                                                                    fallback={
+                                                                        <span class="text-[9px] opacity-30">
+                                                                            🖼️
+                                                                        </span>
+                                                                    }
+                                                                >
+                                                                    <img
+                                                                        src={uploadedImageSrc()}
+                                                                        class="w-full h-full object-cover transition-transform"
+                                                                        style={{
+                                                                            transform: `rotate(${imageRotation()}deg)`,
+                                                                        }}
+                                                                    />
+                                                                </Show>
+                                                            </div>
+                                                            <div
+                                                                class="w-4 h-full border-l flex flex-row items-center justify-center py-1 gap-[2px] transition-colors"
+                                                                style={{
+                                                                    "background-color":
+                                                                        getMiniBgColor(),
+                                                                    "border-color":
+                                                                        "rgba(0,0,0,0.1)",
+                                                                    color: getMiniTextColor(),
+                                                                }}
+                                                            >
+                                                                <div class="w-0.5 h-3/5 rounded-full bg-current opacity-60"></div>
+                                                                <div class="w-0.5 h-4/5 rounded-full bg-current opacity-90"></div>
+                                                            </div>
+                                                        </div>
+                                                    </Show>
+                                                </div>
+                                                <span class="text-[10px] truncate max-w-full leading-tight font-semibold">
+                                                    {item.label}
+                                                </span>
+                                            </button>
+                                        );
+                                    }}
+                                </For>
                             </div>
-                        </Show>
+                        </div>
 
                         <div class="form-control border border-base-300 p-3 rounded-xl bg-base-200/50">
                             <label class="flex items-center justify-between cursor-pointer text-base-content">
