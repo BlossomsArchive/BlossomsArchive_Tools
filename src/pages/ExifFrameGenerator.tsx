@@ -243,6 +243,19 @@ export default function ExifFrame() {
         const longSide = Math.max(imgW, imgH);
         const basePadding = Math.round(longSide * 0.02);
         const textSpace = Math.round(longSide * 0.08);
+        const isSideHorizontal =
+            framePosition() === "left-horizontal" ||
+            framePosition() === "right-horizontal";
+        const sideArea = isSideHorizontal
+            ? Math.max(
+                  Math.round(imgW * 0.33),
+                  textSpace + Math.round(longSide * 0.08),
+              )
+            : Math.max(
+                  Math.round(longSide * 0.34),
+                  textSpace + Math.round(longSide * 0.05),
+              );
+        const sidePadding = Math.max(20, Math.round(sideArea * 0.3));
 
         const isRealFrame =
             isAdvancedMode() &&
@@ -264,10 +277,18 @@ export default function ExifFrame() {
             else if (framePosition() === "top") {
                 innerCanvasH += textSpace;
                 imgY = textSpace;
-            } else if (framePosition() === "left") {
-                innerCanvasW += textSpace;
-                imgX = textSpace;
-            } else if (framePosition() === "right") innerCanvasW += textSpace;
+            } else if (
+                framePosition() === "left" ||
+                framePosition() === "left-horizontal"
+            ) {
+                innerCanvasW += sideArea;
+                imgX = sideArea;
+            } else if (
+                framePosition() === "right" ||
+                framePosition() === "right-horizontal"
+            ) {
+                innerCanvasW += sideArea;
+            }
         }
 
         const finalCanvasW = innerCanvasW + realFrameWidth * 2;
@@ -289,6 +310,47 @@ export default function ExifFrame() {
             innerCanvasW,
             innerCanvasH,
         );
+
+        if (framePosition() === "left-horizontal") {
+            ctx.fillStyle =
+                frameColor() === "white"
+                    ? "rgba(255,255,255,0.98)"
+                    : "rgba(15,23,42,0.98)";
+            ctx.fillRect(
+                realFrameWidth,
+                realFrameWidth,
+                sideArea,
+                innerCanvasH,
+            );
+            ctx.strokeStyle =
+                frameColor() === "white"
+                    ? "rgba(148,163,184,0.5)"
+                    : "rgba(148,163,184,0.35)";
+            ctx.lineWidth = Math.max(1, Math.round(longSide * 0.002));
+            ctx.beginPath();
+            ctx.moveTo(realFrameWidth + sideArea, realFrameWidth + 2);
+            ctx.lineTo(
+                realFrameWidth + sideArea,
+                realFrameWidth + innerCanvasH - 2,
+            );
+            ctx.stroke();
+        } else if (framePosition() === "right-horizontal") {
+            const sideX = realFrameWidth + imgW;
+            ctx.fillStyle =
+                frameColor() === "white"
+                    ? "rgba(255,255,255,0.98)"
+                    : "rgba(15,23,42,0.98)";
+            ctx.fillRect(sideX, realFrameWidth, sideArea, innerCanvasH);
+            ctx.strokeStyle =
+                frameColor() === "white"
+                    ? "rgba(148,163,184,0.5)"
+                    : "rgba(148,163,184,0.35)";
+            ctx.lineWidth = Math.max(1, Math.round(longSide * 0.002));
+            ctx.beginPath();
+            ctx.moveTo(sideX, realFrameWidth + 2);
+            ctx.lineTo(sideX, realFrameWidth + innerCanvasH - 2);
+            ctx.stroke();
+        }
 
         const centerX = imgX + imgW / 2;
         const centerY = imgY + imgH / 2;
@@ -436,33 +498,63 @@ export default function ExifFrame() {
             line2: string,
             tx: number,
             ty: number,
+            overrideAlign?: CanvasTextAlign,
+            maxTextWidthAllowed?: number,
         ) => {
             if (!prefixStr && !mainStr && !line2) return;
 
             ctx.save();
-            const hAlign = getHorizontalAlign();
+            const hAlign = overrideAlign ?? getHorizontalAlign();
             ctx.textAlign = hAlign;
 
-            ctx.font = font1Prefix;
-            const prefixW = prefixStr ? ctx.measureText(prefixStr).width : 0;
-            ctx.font = font1Main;
-            const mainW = mainStr ? ctx.measureText(mainStr).width : 0;
-            const w1 = prefixW + mainW;
+            let availableWidth = maxTextWidthAllowed ?? Infinity;
+            let measuredFontSize1 = fontSize1;
+            let measuredFontSize2 = fontSize2;
+            let currentScale = 1;
 
-            ctx.font = font2;
-            const w2 = line2 ? ctx.measureText(line2).width : 0;
-            const maxTextWidth = Math.max(w1, w2);
+            const measureWidths = () => {
+                ctx.font = `300 ${measuredFontSize1}px ${selectedFont()}`;
+                const prefixW = prefixStr
+                    ? ctx.measureText(prefixStr).width
+                    : 0;
+                ctx.font = `bold ${measuredFontSize1}px ${selectedFont()}`;
+                const mainW = mainStr ? ctx.measureText(mainStr).width : 0;
+                const w1 = prefixW + mainW;
 
-            const lineGap = Math.round(fontSize1 * 0.4);
+                ctx.font = `${measuredFontSize2}px ${selectedFont()}`;
+                const w2 = line2 ? ctx.measureText(line2).width : 0;
+                return { prefixW, mainW, w1, w2 };
+            };
+
+            let { prefixW, mainW, w1, w2 } = measureWidths();
+            let targetMaxTextWidth = Math.max(w1, w2);
+            if (targetMaxTextWidth > availableWidth) {
+                currentScale = Math.max(
+                    0.75,
+                    availableWidth / targetMaxTextWidth,
+                );
+                measuredFontSize1 = Math.max(
+                    12,
+                    Math.floor(fontSize1 * currentScale),
+                );
+                measuredFontSize2 = Math.max(
+                    10,
+                    Math.floor(fontSize2 * currentScale),
+                );
+                ({ prefixW, mainW, w1, w2 } = measureWidths());
+                targetMaxTextWidth = Math.max(w1, w2);
+            }
+
+            const lineGap = Math.round(measuredFontSize1 * 0.4);
             const hasLine1 = prefixStr || mainStr;
             const totalTextHeight =
-                (hasLine1 ? fontSize1 : 0) +
-                (line2 ? fontSize2 : 0) +
+                (hasLine1 ? measuredFontSize1 : 0) +
+                (line2 ? measuredFontSize2 : 0) +
                 (hasLine1 && line2 ? lineGap : 0);
 
-            const paddingX = Math.round(fontSize1 * 1.0);
-            const paddingY = Math.round(fontSize1 * 0.6);
-            const pWidth = maxTextWidth + paddingX * 2;
+            const paddingX = Math.round(measuredFontSize1 * 1.0);
+            const paddingY = Math.round(measuredFontSize1 * 0.6);
+            const pWidth = targetMaxTextWidth + paddingX * 2;
             const pHeight = totalTextHeight + paddingY * 2;
 
             let pX = tx;
@@ -596,7 +688,7 @@ export default function ExifFrame() {
                     ? "#222222"
                     : "#e2e8f0";
 
-            let currentTextY = pY + paddingY + fontSize1 * 0.85;
+            let currentTextY = pY + paddingY + measuredFontSize1 * 0.85;
             if (prefixStr || mainStr) {
                 let startX = tx;
                 if (hAlign === "center") {
@@ -608,25 +700,31 @@ export default function ExifFrame() {
                 }
 
                 if (prefixStr) {
-                    ctx.font = font1Prefix;
+                    ctx.font = `300 ${measuredFontSize1}px ${selectedFont()}`;
                     ctx.fillText(prefixStr, startX, currentTextY);
                     startX += prefixW;
                 }
                 if (mainStr) {
-                    ctx.font = font1Main;
+                    ctx.font = `bold ${measuredFontSize1}px ${selectedFont()}`;
                     ctx.fillText(mainStr, startX, currentTextY);
                 }
 
                 ctx.textAlign = hAlign;
-                currentTextY += fontSize2 + lineGap;
+                currentTextY += measuredFontSize2 + lineGap;
             }
             if (line2) {
-                ctx.font = font2;
-                ctx.fillText(line2, tx, currentTextY - fontSize2 * 0.1);
+                ctx.font = `${measuredFontSize2}px ${selectedFont()}`;
+                ctx.fillText(line2, tx, currentTextY - measuredFontSize2 * 0.1);
             }
 
             ctx.restore();
         };
+
+        const isVerticalSide =
+            framePosition() === "left" || framePosition() === "right";
+        const isHorizontalSide =
+            framePosition() === "left-horizontal" ||
+            framePosition() === "right-horizontal";
 
         if (isChekiMode()) {
             const textCenterY = imgY + imgH + Math.round(textSpace / 2);
@@ -636,8 +734,10 @@ export default function ExifFrame() {
                 textLine2,
                 finalCanvasW / 2,
                 textCenterY,
+                undefined,
+                Math.max(100, innerCanvasW - basePadding * 2),
             );
-} else if (framePosition() === "left" || framePosition() === "right") {
+        } else if (isVerticalSide) {
             const x =
                 framePosition() === "left"
                     ? Math.round(textSpace * 0.5) + realFrameWidth
@@ -658,7 +758,9 @@ export default function ExifFrame() {
                 ctx.font = font1Prefix;
                 const pW = prefix ? ctx.measureText(prefix).width : 0;
                 ctx.font = font1Main;
-                const mW = textLine1Main ? ctx.measureText(textLine1Main).width : 0;
+                const mW = textLine1Main
+                    ? ctx.measureText(textLine1Main).width
+                    : 0;
 
                 let sX = -(pW + mW) / 2;
                 ctx.textAlign = "left";
@@ -687,15 +789,33 @@ export default function ExifFrame() {
             } else if (hasLine1) {
                 drawCombinedVertical(x, y);
             } else if (textLine2) {
-                drawVerticalText(
-                    ctx,
-                    textLine2,
-                    x,
-                    y,
-                    font2,
-                );
+                drawVerticalText(ctx, textLine2, x, y, font2);
             }
 
+            ctx.restore();
+        } else if (isHorizontalSide) {
+            const clipX =
+                framePosition() === "left-horizontal"
+                    ? realFrameWidth
+                    : imgX + imgW;
+            const clipWidth = sideArea;
+            const x = clipX + clipWidth / 2;
+            const y = finalCanvasH / 2;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(clipX, realFrameWidth, clipWidth, innerCanvasH);
+            ctx.clip();
+            ctx.fillStyle = tColor;
+            drawCombinedTextAndPlate(
+                prefix,
+                textLine1Main,
+                textLine2,
+                x,
+                y,
+                "center",
+                Math.max(100, clipWidth - 16),
+            );
             ctx.restore();
         } else {
             const y =
@@ -708,6 +828,8 @@ export default function ExifFrame() {
                 textLine2,
                 getHorizontalX(),
                 y,
+                undefined,
+                Math.max(100, imgW - basePadding * 2),
             );
         }
 
@@ -1567,10 +1689,22 @@ export default function ExifFrame() {
                                             isVertical: true,
                                         },
                                         {
+                                            pos: "left-horizontal",
+                                            align: "left",
+                                            label: "左 (横書き)",
+                                            isHorizontal: true,
+                                        },
+                                        {
                                             pos: "right",
                                             align: "left",
                                             label: "右 (縦)",
                                             isVertical: true,
+                                        },
+                                        {
+                                            pos: "right-horizontal",
+                                            align: "right",
+                                            label: "右 (横書き)",
+                                            isHorizontal: true,
                                         },
                                         { label: "チェキ風", isCheki: true },
                                     ]}
@@ -1583,7 +1717,10 @@ export default function ExifFrame() {
                                             if (isChekiMode()) {
                                                 return false;
                                             }
-                                            if (item.isVertical) {
+                                            if (
+                                                item.isVertical ||
+                                                item.isHorizontal
+                                            ) {
                                                 return (
                                                     framePosition() === item.pos
                                                 );
@@ -1804,6 +1941,46 @@ export default function ExifFrame() {
                                                     <Show
                                                         when={
                                                             !item.isCheki &&
+                                                            item.pos ===
+                                                                "left-horizontal"
+                                                        }
+                                                    >
+                                                        <div class="w-full h-full flex flex-row">
+                                                            <div
+                                                                class="w-8 h-full flex flex-col items-center justify-center gap-1 transition-colors"
+                                                                style={{
+                                                                    "background-color":
+                                                                        getMiniBgColor(),
+                                                                    color: getMiniTextColor(),
+                                                                }}
+                                                            >
+                                                                <div class="w-5 h-0.5 rounded-full bg-current opacity-90"></div>
+                                                                <div class="w-5 h-0.5 rounded-full bg-current opacity-70"></div>
+                                                            </div>
+                                                            <div class="flex-1 bg-slate-900 overflow-hidden relative flex items-center justify-center">
+                                                                <Show
+                                                                    when={uploadedImageSrc()}
+                                                                    fallback={
+                                                                        <span class="text-[9px] opacity-30">
+                                                                            🖼️
+                                                                        </span>
+                                                                    }
+                                                                >
+                                                                    <img
+                                                                        src={uploadedImageSrc()}
+                                                                        class="w-full h-full object-cover transition-transform"
+                                                                        style={{
+                                                                            transform: `rotate(${imageRotation()}deg)`,
+                                                                        }}
+                                                                    />
+                                                                </Show>
+                                                            </div>
+                                                        </div>
+                                                    </Show>
+
+                                                    <Show
+                                                        when={
+                                                            !item.isCheki &&
                                                             item.pos === "right"
                                                         }
                                                     >
@@ -1838,6 +2015,46 @@ export default function ExifFrame() {
                                                             >
                                                                 <div class="w-0.5 h-3/5 rounded-full bg-current opacity-60"></div>
                                                                 <div class="w-0.5 h-4/5 rounded-full bg-current opacity-90"></div>
+                                                            </div>
+                                                        </div>
+                                                    </Show>
+
+                                                    <Show
+                                                        when={
+                                                            !item.isCheki &&
+                                                            item.pos ===
+                                                                "right-horizontal"
+                                                        }
+                                                    >
+                                                        <div class="w-full h-full flex flex-row">
+                                                            <div class="flex-1 bg-slate-900 overflow-hidden relative flex items-center justify-center">
+                                                                <Show
+                                                                    when={uploadedImageSrc()}
+                                                                    fallback={
+                                                                        <span class="text-[9px] opacity-30">
+                                                                            🖼️
+                                                                        </span>
+                                                                    }
+                                                                >
+                                                                    <img
+                                                                        src={uploadedImageSrc()}
+                                                                        class="w-full h-full object-cover transition-transform"
+                                                                        style={{
+                                                                            transform: `rotate(${imageRotation()}deg)`,
+                                                                        }}
+                                                                    />
+                                                                </Show>
+                                                            </div>
+                                                            <div
+                                                                class="w-8 h-full flex flex-col items-center justify-center gap-1 transition-colors"
+                                                                style={{
+                                                                    "background-color":
+                                                                        getMiniBgColor(),
+                                                                    color: getMiniTextColor(),
+                                                                }}
+                                                            >
+                                                                <div class="w-5 h-0.5 rounded-full bg-current opacity-90"></div>
+                                                                <div class="w-5 h-0.5 rounded-full bg-current opacity-70"></div>
                                                             </div>
                                                         </div>
                                                     </Show>
