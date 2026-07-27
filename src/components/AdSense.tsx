@@ -58,11 +58,7 @@ export default function AdSense(props: AdSenseProps) {
     return (
         <div
             ref={container!}
-            class={`my-6 flex justify-center items-center overflow-hidden w-full min-h-[90px] bg-base-200 border border-dashed border-base-content/20 ${props.class ?? ""}`}
-        >
-            <span class="text-xs text-base-content/40 font-mono">
-                {currentSlot()}
-            </span>
-        </div>
+            class={`my-6 flex justify-center overflow-hidden w-full ${props.class ?? ""}`}
+        />
     );
 }
