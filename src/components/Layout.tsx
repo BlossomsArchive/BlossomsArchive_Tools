@@ -34,7 +34,7 @@ export default function Layout(props: LayoutProps) {
     };
 
     const gaTag = gaId ? createScriptLoader({ src: `https://www.googletagmanager.com/gtag/js?id=${gaId}`, async onLoad() { (window as any).dataLayer = (window as any).dataLayer || []; function gtag(..._args: any[]) { (window as any).dataLayer.push(arguments); } (window as any).gtag = gtag; gtag("js", new Date()); gtag("config", gaId, { send_page_view: false }); } }) : null;
-    const adsenseTag = adsenseId ? createScriptLoader({ src: `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseId}`, crossOrigin: "anonymous" }) : null;
+    const adsenseTag = adsenseId ? createScriptLoader({ src: "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", crossOrigin: "anonymous" }) : null;
 
     const getHeaderTitle = () => {
         const route = routes.find((r) => r.path === location.pathname);
