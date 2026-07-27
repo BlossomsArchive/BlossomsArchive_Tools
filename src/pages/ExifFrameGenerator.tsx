@@ -266,8 +266,7 @@ export default function ExifFrame() {
             framePosition() === "right-horizontal";
         const isPortrait = imgH > imgW;
         const sideAreaHorizontal = Math.max(
-            Math.round(imgW * 0.42),
-            Math.round(imgH * 0.5),
+            imgW,
             textSpace + Math.round(longSide * 0.12),
         );
         const sideAreaVertical = Math.max(
