@@ -8,6 +8,7 @@ import {
 } from "solid-js";
 import exifr from "exifr";
 import piexif from "piexifjs";
+import AdSense from "../components/AdSense";
 
 export default function ExifFrame() {
     const [fileName, setFileName] = createSignal("");
@@ -2494,6 +2495,8 @@ export default function ExifFrame() {
                     </div>
                 </div>
             </Show>
+            <AdSense />
+            <AdSense />
         </div>
     );
 }

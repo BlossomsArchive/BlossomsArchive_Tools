@@ -141,9 +141,6 @@ export default function Calculator() {
                     </For>
                 </ul>
             </div>
-            <AdSense />
-            <AdSense />
-            <AdSense />
         </div>
     );
 }
