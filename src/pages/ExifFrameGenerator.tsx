@@ -1720,7 +1720,7 @@ export default function ExifFrame() {
                                         {
                                             pos: "left-horizontal",
                                             align: "left",
-                                            label: "左 (横書き)",
+                                            label: "左 (横)",
                                             isHorizontal: true,
                                         },
                                         {
@@ -1732,7 +1732,7 @@ export default function ExifFrame() {
                                         {
                                             pos: "right-horizontal",
                                             align: "right",
-                                            label: "右 (横書き)",
+                                            label: "右 (横)",
                                             isHorizontal: true,
                                         },
                                         { label: "チェキ風", isCheki: true },
