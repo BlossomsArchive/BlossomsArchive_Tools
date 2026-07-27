@@ -30,10 +30,15 @@ export default function AdSense(props: AdSenseProps) {
 
         container.innerHTML = "";
 
-        // 1. 最初はあえて "adsbygoogle" クラスをつけずに生成する！（Googleの自動スキャンを回避）
+        // 1. <ins> 要素をステルス生成
         const ins = document.createElement("ins");
         ins.className = "adsbygoogle-stealth";
         ins.style.display = "block";
+
+        // 🌟 ここが超重要！<ins> 自体にもインラインで幅を強制適用して、Googleのチェックをすり抜けさせる！
+        ins.style.width = "100%";
+        ins.style.minWidth = "250px";
+
         ins.setAttribute("data-ad-client", clientId);
         ins.setAttribute("data-ad-slot", activeSlot);
         ins.setAttribute("data-ad-format", props.format ?? "auto");
@@ -45,15 +50,15 @@ export default function AdSense(props: AdSenseProps) {
 
             const width = container.offsetWidth;
 
-            // 横幅が0pxの間は、クラス名を付けずに泳がせてリトライする
+            // コンテナ自体の幅がまだ0なら当然リトライ
             if (width === 0) {
-                timerId = window.setTimeout(pushAd, 50);
+                timerId = window.setTimeout(pushAd, 100);
                 return;
             }
 
-            // 🌟 横幅がちゃんと1px以上あることを確認したら、本来のクラス名に変えてpushする
             try {
-                ins.className = "adsbygoogle"; // ここで初めてGoogleに補足される状態にする
+                // クラス名を本来のものに変える
+                ins.className = "adsbygoogle";
 
                 (window as any).adsbygoogle = (window as any).adsbygoogle || [];
                 (window as any).adsbygoogle.push({});
@@ -62,8 +67,8 @@ export default function AdSense(props: AdSenseProps) {
             }
         };
 
-        // ブラウザの最初のレイアウト組み立てを待つために少しだけ遅らせる
-        timerId = window.setTimeout(pushAd, 50);
+        // ブラウザのレンダリングが完全に一段落するのを待つために 100ms に伸ばした
+        timerId = window.setTimeout(pushAd, 100);
     });
 
     onCleanup(() => {
