@@ -135,6 +135,24 @@ export default function ExifFrame() {
             value: "'Kiwi Maru', serif",
             link: "Kiwi+Maru:wght@300;400;500",
         },
+        {
+            id: "display",
+            name: "Inter",
+            value: "'Inter', sans-serif",
+            link: "Inter:wght@300;400;500;700",
+        },
+        {
+            id: "mono",
+            name: "JetBrains Mono",
+            value: "'JetBrains Mono', monospace",
+            link: "JetBrains+Mono:wght@300;400;500;700",
+        },
+        {
+            id: "decorative",
+            name: "Amatic SC",
+            value: "'Amatic SC', cursive",
+            link: "Amatic+SC:wght@400;700",
+        },
     ];
 
     const frameTemplates = [
@@ -1411,6 +1429,9 @@ export default function ExifFrame() {
                                                 )}
                                             </For>
                                         </select>
+                                        <p class="text-[10px] text-base-content/60 mt-1">
+                                            利用可能なフォントは各フォントの利用規約に従ってください。
+                                        </p>
                                     </div>
                                     <div class="flex flex-col gap-1">
                                         <span class="font-bold text-base-content/60 text-[10px]">
