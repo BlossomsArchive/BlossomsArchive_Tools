@@ -264,16 +264,22 @@ export default function ExifFrame() {
         const isSideHorizontal =
             framePosition() === "left-horizontal" ||
             framePosition() === "right-horizontal";
+        const isPortrait = imgH > imgW;
+        const sideAreaHorizontal = Math.max(
+            Math.round(imgW * 0.42),
+            Math.round(imgH * 0.5),
+            textSpace + Math.round(longSide * 0.12),
+        );
+        const sideAreaVertical = Math.max(
+            Math.round(longSide * 0.16),
+            textSpace + Math.round(longSide * 0.02),
+        );
         const sideArea = isSideHorizontal
-            ? Math.max(
-                  Math.round(imgW * 0.33),
-                  textSpace + Math.round(longSide * 0.08),
-              )
-            : Math.max(
-                  Math.round(longSide * 0.34),
-                  textSpace + Math.round(longSide * 0.05),
-              );
-        const sidePadding = Math.max(20, Math.round(sideArea * 0.3));
+            ? sideAreaHorizontal
+            : sideAreaVertical;
+        const sidePadding = isSideHorizontal
+            ? Math.max(24, Math.round(sideArea * 0.28))
+            : Math.max(16, Math.round(sideArea * 0.22));
 
         const isRealFrame =
             isAdvancedMode() &&
@@ -758,8 +764,8 @@ export default function ExifFrame() {
         } else if (isVerticalSide) {
             const x =
                 framePosition() === "left"
-                    ? Math.round(textSpace * 0.5) + realFrameWidth
-                    : imgW + Math.round(textSpace * 0.5) + realFrameWidth;
+                    ? realFrameWidth + sideArea / 2
+                    : realFrameWidth + imgW + sideArea / 2;
             const y = finalCanvasH / 2;
             const gap = Math.round(textSpace * 0.1);
 
@@ -815,7 +821,7 @@ export default function ExifFrame() {
             const clipX =
                 framePosition() === "left-horizontal"
                     ? realFrameWidth
-                    : imgX + imgW;
+                    : realFrameWidth + imgW;
             const clipWidth = sideArea;
             const x = clipX + clipWidth / 2;
             const y = finalCanvasH / 2;
@@ -2410,7 +2416,7 @@ export default function ExifFrame() {
                             </button>
                             <canvas
                                 ref={(el) => (canvasRef = el)}
-                                class="w-full h-full max-h-[500px] lg:max-h-[calc(100vh-160px)] object-contain rounded-none shadow-lg bg-transparent transition-all duration-300"
+                                class="w-full h-full max-h-[500px] lg:max-h-[calc(100vh-160px)] object-contain rounded-none shadow-lg bg-slate-200 transition-all duration-300"
                             />
                         </Show>
                     </div>
@@ -2442,7 +2448,7 @@ export default function ExifFrame() {
                                 el.getContext("2d")?.drawImage(canvasRef, 0, 0);
                             }
                         }}
-                        class="max-w-full max-h-[90vh] object-contain shadow-2xl"
+                        class="max-w-full max-h-[90vh] object-contain shadow-2xl bg-slate-200"
                     />
                 </div>
             </Show>
