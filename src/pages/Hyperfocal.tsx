@@ -6,6 +6,7 @@ import {
     For,
     Show,
 } from "solid-js";
+import AdSense from "../components/AdSense";
 
 export default function HyperfocalCalculator() {
     const [sensorType, setSensorType] = createSignal("apsc-sony");
@@ -707,6 +708,7 @@ export default function HyperfocalCalculator() {
                         </div>
                     </div>
                 </div>
+                <AdSense />
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full mt-8 pt-6 border-t border-base-300">
                     <div class="card bg-base-200/50 p-6 rounded-2xl border border-base-300">
@@ -791,6 +793,8 @@ export default function HyperfocalCalculator() {
                     </div>
                 </div>
             </div>
+            <AdSense />
+            <AdSense />
         </div>
     );
 }

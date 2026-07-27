@@ -1,4 +1,5 @@
 import { createSignal, onMount, onCleanup, For, Show } from "solid-js";
+import AdSense from "../components/AdSense";
 
 export default function PasswordGenerator() {
     const [length, setLength] = createSignal(16);
@@ -370,6 +371,8 @@ export default function PasswordGenerator() {
                     </div>
                 </div>
 
+                <AdSense />
+
                 {/* 💡 技術仕様 ＆ FAQセクション（アピールを廃止し、学術的・客観的な記述に統一） */}
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
                     {/* 暗号理論・乱数発生器の仕様 */}
@@ -457,6 +460,8 @@ export default function PasswordGenerator() {
                     </div>
                 </div>
             </div>
+            <AdSense />
+            <AdSense />
         </div>
     );
 }

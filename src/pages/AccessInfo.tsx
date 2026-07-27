@@ -1,4 +1,5 @@
 import { createSignal, Show, onMount, onCleanup } from "solid-js";
+import AdSense from "../components/AdSense";
 
 interface IpData {
     ip: string;
@@ -31,7 +32,8 @@ export default function AccessInfo() {
 
     // SEO対策：メタデータの動的挿入
     onMount(() => {
-        document.title = "アクセス環境解析ツール | IP・端末・回線情報チェッカー";
+        document.title =
+            "アクセス環境解析ツール | IP・端末・回線情報チェッカー";
 
         let metaDesc = document.querySelector('meta[name="description"]');
         if (!metaDesc) {
@@ -54,7 +56,8 @@ export default function AccessInfo() {
             operatingSystem: "All",
             applicationCategory: "UtilityApplication",
             browserRequirements: "Requires JavaScript. Requires HTML5.",
-            description: "IPアドレスや端末の各種環境情報をまとめて取得・表示する解析ツールです。",
+            description:
+                "IPアドレスや端末の各種環境情報をまとめて取得・表示する解析ツールです。",
         });
         document.head.appendChild(script);
     });
@@ -593,6 +596,8 @@ IPアドレス: ${data.ip}
                     </div>
                 </Show>
             </div>
+            <AdSense />
+            <AdSense />
         </div>
     );
 }

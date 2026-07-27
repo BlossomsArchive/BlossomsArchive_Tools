@@ -164,6 +164,7 @@ export default function Clock() {
                     day: "numeric",
                 })}
             </div>
+            <AdSense />
 
             <AdSense />
         </div>

@@ -1,4 +1,5 @@
 import { createSignal, onMount, onCleanup, Show } from "solid-js";
+import AdSense from "../components/AdSense";
 
 export default function ImageConverter() {
     const [selectedFile, setSelectedFile] = createSignal<File | null>(null);
@@ -242,6 +243,7 @@ export default function ImageConverter() {
                         </div>
                     </div>
                 </div>
+                <AdSense />
 
                 {/* 💡 技術仕様 ＆ 学術的なQ&Aセクション */}
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
@@ -323,6 +325,8 @@ export default function ImageConverter() {
                     </div>
                 </div>
             </div>
+            <AdSense />
+            <AdSense />
         </div>
     );
 }

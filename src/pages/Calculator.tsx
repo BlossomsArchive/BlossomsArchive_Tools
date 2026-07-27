@@ -1,5 +1,6 @@
 // src/pages/Calculator.tsx
 import { createSignal, For, onMount, onCleanup } from "solid-js";
+import AdSense from "../components/AdSense";
 
 export default function Calculator() {
     const [display, setDisplay] = createSignal("0");
@@ -140,6 +141,9 @@ export default function Calculator() {
                     </For>
                 </ul>
             </div>
+            <AdSense />
+            <AdSense />
+            <AdSense />
         </div>
     );
 }

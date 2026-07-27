@@ -1,4 +1,5 @@
 import { createSignal, onMount, onCleanup, Show, For } from "solid-js";
+import AdSense from "../components/AdSense";
 
 interface HistoryItem {
     id: number;
@@ -401,6 +402,8 @@ export default function Lottery() {
                         </div>
                     </div>
 
+                    <AdSense />
+
                     {/* 抽選技術の解説（FAQ） */}
                     <div class="card bg-base-100 p-6 md:p-8 border border-slate-200 shadow-sm">
                         <h2 class="text-base font-bold text-slate-800 border-b border-slate-200 pb-3 mb-5">
@@ -448,6 +451,8 @@ export default function Lottery() {
                     </div>
                 </div>
             </div>
+            <AdSense />
+            <AdSense />
         </div>
     );
 }

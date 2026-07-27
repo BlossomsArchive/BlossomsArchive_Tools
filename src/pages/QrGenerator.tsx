@@ -1,6 +1,7 @@
 // 1. Solid-js からのインポートに「For」を追加しました
 import { createSignal, onMount, onCleanup, Show, For } from "solid-js";
 import QRCode from "qrcode";
+import AdSense from "../components/AdSense";
 
 // ボタンオプション用の型を定義して TypeScript に型を教えます
 interface FormatOption {
@@ -17,8 +18,7 @@ export default function QrGenerator() {
 
     // SEO対策：メタデータおよび構造化データの動的注入
     onMount(() => {
-        document.title =
-            "QRコード作成・生成ツール｜商用利用可・高画質SVG対応";
+        document.title = "QRコード作成・生成ツール｜商用利用可・高画質SVG対応";
 
         let metaDesc = document.querySelector('meta[name="description"]');
         if (!metaDesc) {
@@ -360,6 +360,9 @@ export default function QrGenerator() {
                     </div>
                 </div>
             </div>
+
+            <AdSense />
+            <AdSense />
 
             {/* 拡大表示用モーダル */}
             <Show when={isLarge()}>

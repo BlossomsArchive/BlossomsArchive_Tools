@@ -1,5 +1,6 @@
 import { For } from "solid-js";
 import { routes } from "../routes";
+import AdSense from "../components/AdSense";
 
 export default function Home() {
     return (
@@ -31,6 +32,8 @@ export default function Home() {
                     )}
                 </For>
             </div>
+            <AdSense />
+            <AdSense />
         </div>
     );
 }
