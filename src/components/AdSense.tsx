@@ -78,7 +78,7 @@ export default function AdSense(props: AdSenseProps) {
     return (
         <div
             ref={container!}
-            class={`${props.class ?? ""}`}
+            class={`my-6 flex justify-center overflow-hidden w-full min-h-[90px] ${props.class ?? ""}`}
         />
     );
 }
