@@ -23,6 +23,7 @@ export default function ExifFrame() {
 
     const [showMobileSaveModal, setShowMobileSaveModal] = createSignal(false);
     const [downloadImageSrc, setDownloadImageSrc] = createSignal("");
+    const [downloadFileName, setDownloadFileName] = createSignal("");
     const [uploadedImageSrc, setUploadedImageSrc] = createSignal("");
 
     const [useCustomTitle, setUseCustomTitle] = createSignal(false);
@@ -1057,13 +1058,15 @@ export default function ExifFrame() {
             }
         }
 
+        const downloadName = `${baseName}.${saveFormat().split("/")[1]}`;
         setDownloadImageSrc(finalDataUrl);
+        setDownloadFileName(downloadName);
         setShowMobileSaveModal(true);
 
         const a = document.createElement("a");
         document.body.appendChild(a);
         a.href = finalDataUrl;
-        a.download = `${baseName}.${saveFormat().split("/")[1]}`;
+        a.download = downloadName;
         a.click();
         document.body.removeChild(a);
     };
@@ -2465,24 +2468,21 @@ export default function ExifFrame() {
                             <h3 class="font-bold text-sm text-base-content flex items-center justify-center gap-1.5">
                                 📥 画像が生成されました
                             </h3>
-                            <p class="text-[11px] text-base-content/70 leading-relaxed font-medium mt-1">
-                                スマートフォンのブラウザ制限により自動保存が開始されない場合は、
-                                <br />
-                                下記の画像を
-                                <br />
-                                <strong class="text-primary font-bold text-xs">
-                                    長押し（ロングタップ）
-                                </strong>
-                                して保存してください。
-                            </p>
                         </div>
-                        <div class="w-full max-h-[50vh] overflow-y-auto bg-base-200 p-2 rounded-xl flex items-center justify-center">
+                        <div class="w-full max-h-[55vh] overflow-hidden bg-base-200 p-2 rounded-xl flex items-center justify-center">
                             <img
                                 src={downloadImageSrc()}
                                 alt="Generated masterpiece"
-                                class="max-w-full max-h-[45vh] object-contain shadow-md rounded-xs select-none"
+                                class="max-w-full max-h-[55vh] object-contain shadow-md rounded-xs select-none"
                             />
                         </div>
+                        <a
+                            href={downloadImageSrc()}
+                            download={downloadFileName()}
+                            class="btn btn-secondary text-white w-full h-11 text-xs rounded-xl shadow-xs"
+                        >
+                            ダウンロード
+                        </a>
 
                         <button
                             type="button"
