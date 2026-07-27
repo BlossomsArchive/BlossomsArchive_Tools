@@ -1,5 +1,6 @@
 // src/pages/Clock.tsx
 import { createSignal, onMount, onCleanup, Switch, Match, For } from "solid-js";
+import AdSense from "../components/AdSense";
 
 export default function Clock() {
     const [time, setTime] = createSignal(new Date());
@@ -163,6 +164,8 @@ export default function Clock() {
                     day: "numeric",
                 })}
             </div>
+
+            <AdSense/>
         </div>
     );
 }

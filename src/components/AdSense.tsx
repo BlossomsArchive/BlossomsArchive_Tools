@@ -1,46 +1,52 @@
-// src/components/AdSense.tsx
-import { createEffect, createMemo, onCleanup } from "solid-js";
+import { createEffect, createMemo } from "solid-js";
 import { useLocation } from "@solidjs/router";
 
 interface AdSenseProps {
-    slot: string;
+    slot?: string; // 🌟 オプショナルにして、指定がなくても動くようにする
     format?: string;
     class?: string;
 }
 
 export default function AdSense(props: AdSenseProps) {
+    // 環境変数からクライアントIDと、デフォルトのスロットIDを取得する
     const clientId = import.meta.env.VITE_ADSENSE_CLIENT_ID;
+    const defaultSlot = import.meta.env.VITE_ADSENSE_DEFAULT_SLOT;
 
     // クライアントIDがない場合は何も表示しない（エラー防止）
     if (!clientId) return null;
 
     const location = useLocation();
 
-    // 現在のルートとスロットを監視して、変化があったら効果を再実行する
-    const key = createMemo(() => location.pathname + props.slot);
+    // propsで直接指定があればそれを最優先し、なければ環境変数のデフォルトIDを使う
+    const currentSlot = () => props.slot ?? defaultSlot;
+
+    // 現在のルートとスロットIDの組み合わせを監視するキー
+    const key = createMemo(() => location.pathname + currentSlot());
 
     let container!: HTMLDivElement;
 
     createEffect(() => {
-        // key() を参照することで、ルート変化やslot変更を検知する
-        key();
+        // key() を内部で実行して依存関係に登録し、ルート変化やslot変更を検知する
+        const activeKey = key();
+        const activeSlot = currentSlot();
 
-        if (!container) return;
+        // コンテナの参照がない、またはスロットIDが空っぽの場合は処理をスキップ
+        if (!container || !activeSlot) return;
 
-        // 1. 中身を一度完全に空にする
+        // 1. 古い広告の中身を一度完全に空にする
         container.innerHTML = "";
 
-        // 2. <ins> 要素を新しく生成
+        // 2. <ins> 要素を新しく生成して設定を流し込む
         const ins = document.createElement("ins");
         ins.className = "adsbygoogle";
         ins.style.display = "block";
         ins.setAttribute("data-ad-client", clientId);
-        ins.setAttribute("data-ad-slot", props.slot);
+        ins.setAttribute("data-ad-slot", activeSlot);
         ins.setAttribute("data-ad-format", props.format ?? "auto");
         ins.setAttribute("data-full-width-responsive", "true");
         container.appendChild(ins);
 
-        // 3. AdSenseの初期化処理
+        // 3. AdSenseの初期化処理を走らせる
         try {
             (window as any).adsbygoogle = (window as any).adsbygoogle || [];
             (window as any).adsbygoogle.push({});
