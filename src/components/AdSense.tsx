@@ -21,20 +21,18 @@ export default function AdSense(props: AdSenseProps) {
     let timerId: number | null = null;
 
     createEffect(() => {
-        key(); 
+        key();
         const activeSlot = currentSlot();
 
         if (!container || !activeSlot) return;
 
-        // 過去のタイマーが動いていたらクリアする
         if (timerId) clearTimeout(timerId);
 
-        // 1. 中身を一度完全に空にする
         container.innerHTML = "";
 
-        // 2. <ins> 要素を新しく生成
+        // 1. 最初はあえて "adsbygoogle" クラスをつけずに生成する！（Googleの自動スキャンを回避）
         const ins = document.createElement("ins");
-        ins.className = "adsbygoogle";
+        ins.className = "adsbygoogle-stealth";
         ins.style.display = "block";
         ins.setAttribute("data-ad-client", clientId);
         ins.setAttribute("data-ad-slot", activeSlot);
@@ -42,21 +40,21 @@ export default function AdSense(props: AdSenseProps) {
         ins.setAttribute("data-full-width-responsive", "true");
         container.appendChild(ins);
 
-        // 3. 親要素の横幅（availableWidth）が確定してからpushする関数
         const pushAd = () => {
-            if (!container) return;
+            if (!container || !ins) return;
 
-            // コンテナの実際の横幅をチェックする
             const width = container.offsetWidth;
 
-            // 🌟 横幅が0px（まだ描画が終わっていない）の場合は、50ms待ってリトライする！
+            // 横幅が0pxの間は、クラス名を付けずに泳がせてリトライする
             if (width === 0) {
                 timerId = window.setTimeout(pushAd, 50);
                 return;
             }
 
-            // 横幅がちゃんとあれば、安全にGoogleに初期化を要求する
+            // 🌟 横幅がちゃんと1px以上あることを確認したら、本来のクラス名に変えてpushする
             try {
+                ins.className = "adsbygoogle"; // ここで初めてGoogleに補足される状態にする
+
                 (window as any).adsbygoogle = (window as any).adsbygoogle || [];
                 (window as any).adsbygoogle.push({});
             } catch (e) {
@@ -64,11 +62,10 @@ export default function AdSense(props: AdSenseProps) {
             }
         };
 
-        // 最初の実行を少しだけ遅らせてブラウザの描画を待つ
-        timerId = window.setTimeout(pushAd, 10);
+        // ブラウザの最初のレイアウト組み立てを待つために少しだけ遅らせる
+        timerId = window.setTimeout(pushAd, 50);
     });
 
-    // コンポーネントが消えるときにタイマーも消す安全対策
     onCleanup(() => {
         if (timerId) clearTimeout(timerId);
     });
@@ -76,7 +73,6 @@ export default function AdSense(props: AdSenseProps) {
     return (
         <div
             ref={container!}
-            // 🌟 CSS側でも確実に横幅が潰れないように明示的に指定を足した
             class={`my-6 flex justify-center overflow-hidden w-full min-h-[90px] ${props.class ?? ""}`}
             style={{ width: "100%", "min-width": "250px" }}
         />
