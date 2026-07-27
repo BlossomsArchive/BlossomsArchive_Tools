@@ -165,7 +165,7 @@ export default function Clock() {
                 })}
             </div>
 
-            <AdSense/>
+            <AdSense />
         </div>
     );
 }
