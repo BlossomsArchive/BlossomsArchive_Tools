@@ -9,7 +9,6 @@ import {
 import exifr from "exifr";
 import piexif from "piexifjs";
 import AdSense from "../components/AdSense";
-
 export default function ExifFrame() {
     const [fileName, setFileName] = createSignal("");
     const [customExportName, setCustomExportName] = createSignal("");
@@ -249,6 +248,19 @@ export default function ExifFrame() {
         ctx.restore();
     };
 
+    const pickContrast = (hex?: string) => {
+        if (!hex || typeof hex !== "string")
+            return frameColor() === "white" ? "#000000" : "#ffffff";
+        const h = hex.replace("#", "");
+        if (!/^[0-9a-fA-F]{6}$/.test(h))
+            return frameColor() === "white" ? "#000000" : "#ffffff";
+        const r = parseInt(h.slice(0, 2), 16);
+        const g = parseInt(h.slice(2, 4), 16);
+        const b = parseInt(h.slice(4, 6), 16);
+        const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+        return luminance > 0.6 ? "#000000" : "#ffffff";
+    };
+
     const drawFrame = () => {
         if (!canvasRef || !sourceImage) return;
         const ctx = canvasRef.getContext("2d");
@@ -263,10 +275,10 @@ export default function ExifFrame() {
         const longSide = Math.max(imgW, imgH);
         const basePadding = Math.round(longSide * 0.02);
         const textSpace = Math.round(longSide * 0.08);
+        const isPortrait = imgH > imgW;
         const isSideHorizontal =
             framePosition() === "left-horizontal" ||
             framePosition() === "right-horizontal";
-        const isPortrait = imgH > imgW;
         const sideAreaHorizontal = Math.max(
             imgW,
             textSpace + Math.round(longSide * 0.12),
@@ -525,6 +537,8 @@ export default function ExifFrame() {
             ty: number,
             overrideAlign?: CanvasTextAlign,
             maxTextWidthAllowed?: number,
+            isOverlay?: boolean,
+            overlayVerticalAlign: "top" | "center" | "bottom" = "center",
         ) => {
             if (!prefixStr && !mainStr && !line2) return;
 
@@ -705,13 +719,38 @@ export default function ExifFrame() {
                 ctx.restore();
             }
 
-            ctx.fillStyle = isMetal
+            let finalTextColor = isMetal
                 ? tColor
                 : isAdvancedMode()
                   ? customTextColor()
                   : frameColor() === "white"
                     ? "#222222"
                     : "#e2e8f0";
+
+            if (isOverlay === true) {
+                const pickContrast = (hex: string) => {
+                    if (!hex || typeof hex !== "string")
+                        return frameColor() === "white" ? "#000000" : "#ffffff";
+                    const h = hex.replace("#", "");
+                    if (!/^[0-9a-fA-F]{6}$/.test(h))
+                        return frameColor() === "white" ? "#000000" : "#ffffff";
+                    const r = parseInt(h.slice(0, 2), 16);
+                    const g = parseInt(h.slice(2, 4), 16);
+                    const b = parseInt(h.slice(4, 6), 16);
+                    const luminance =
+                        (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+                    return luminance > 0.6 ? "#000000" : "#ffffff";
+                };
+
+                try {
+                    finalTextColor = pickContrast(finalTextColor);
+                } catch (e) {
+                    finalTextColor =
+                        frameColor() === "white" ? "#000000" : "#ffffff";
+                }
+            }
+
+            ctx.fillStyle = finalTextColor;
 
             let currentTextY = pY + paddingY + measuredFontSize1 * 0.85;
             if (prefixStr || mainStr) {
@@ -843,19 +882,225 @@ export default function ExifFrame() {
             );
             ctx.restore();
         } else {
-            const y =
-                framePosition() === "bottom"
-                    ? imgH + textSpace / 2 + imgY
-                    : textSpace / 2 + realFrameWidth;
-            drawCombinedTextAndPlate(
-                prefix,
-                textLine1Main,
-                textLine2,
-                getHorizontalX(),
-                y,
-                undefined,
-                Math.max(100, imgW - basePadding * 2),
-            );
+            const pos = framePosition();
+            // Handle overlay positions (画像内埋め込み)
+            if (typeof pos === "string" && pos.startsWith("overlay")) {
+                const maxW = Math.max(100, imgW - basePadding * 2);
+                // inset from image edges for overlay text (use slightly larger than basePadding)
+                const overlayInset = Math.max(
+                    basePadding,
+                    Math.round(longSide * 0.04),
+                );
+                let tx = imgX + imgW / 2;
+                let ty = imgY + imgH / 2;
+                let overrideAlign: CanvasTextAlign | undefined = "center";
+                let overlayV: "top" | "center" | "bottom" = "center";
+
+                if (pos === "overlay-top-left") {
+                    tx = imgX + overlayInset;
+                    ty = imgY + overlayInset;
+                    overrideAlign = "start";
+                    overlayV = "top";
+                } else if (pos === "overlay-top-center") {
+                    tx = imgX + imgW / 2;
+                    ty = imgY + overlayInset;
+                    overrideAlign = "center";
+                    overlayV = "top";
+                } else if (pos === "overlay-top-right") {
+                    tx = imgX + imgW - overlayInset;
+                    ty = imgY + overlayInset;
+                    overrideAlign = "end";
+                    overlayV = "top";
+                } else if (pos === "overlay-bottom-left") {
+                    tx = imgX + overlayInset;
+                    ty = imgY + imgH - overlayInset;
+                    overrideAlign = "start";
+                    overlayV = "bottom";
+                } else if (pos === "overlay-bottom-center") {
+                    tx = imgX + imgW / 2;
+                    ty = imgY + imgH - overlayInset;
+                    overrideAlign = "center";
+                    overlayV = "bottom";
+                } else if (pos === "overlay-bottom-right") {
+                    tx = imgX + imgW - overlayInset;
+                    ty = imgY + imgH - overlayInset;
+                    overrideAlign = "end";
+                    overlayV = "bottom";
+                } else if (pos === "overlay-right-vertical") {
+                    const hasLine1 = prefix || textLine1Main;
+                    const gap = Math.round(textSpace * 0.1);
+                    const x = imgX + imgW - overlayInset;
+                    const y = imgY + imgH / 2;
+                    const isMetalLocal =
+                        isAdvancedMode() &&
+                        (textPlateStyle() === "metal-gold" ||
+                            textPlateStyle() === "metal-silver");
+                    let finalTextColorV = isMetalLocal
+                        ? tColor
+                        : isAdvancedMode()
+                          ? customTextColor()
+                          : frameColor() === "white"
+                            ? "#222222"
+                            : "#e2e8f0";
+                    try {
+                        finalTextColorV = pickContrast(finalTextColorV);
+                    } catch (e) {
+                        finalTextColorV =
+                            frameColor() === "white" ? "#000000" : "#ffffff";
+                    }
+
+                    ctx.fillStyle = finalTextColorV;
+
+                    const drawCombinedVerticalOverlay = (
+                        vx: number,
+                        vy: number,
+                    ) => {
+                        ctx.save();
+                        ctx.translate(vx, vy);
+                        ctx.rotate(Math.PI / 2);
+
+                        ctx.font = font1Prefix;
+                        const pW = prefix ? ctx.measureText(prefix).width : 0;
+                        ctx.font = font1Main;
+                        const mW = textLine1Main
+                            ? ctx.measureText(textLine1Main).width
+                            : 0;
+
+                        let sX = -(pW + mW) / 2;
+                        ctx.textAlign = "left";
+
+                        if (prefix) {
+                            ctx.font = font1Prefix;
+                            ctx.fillText(prefix, sX, 0);
+                            sX += pW;
+                        }
+                        if (textLine1Main) {
+                            ctx.font = font1Main;
+                            ctx.fillText(textLine1Main, sX, 0);
+                        }
+                        ctx.restore();
+                    };
+
+                    if (hasLine1 && textLine2) {
+                        drawCombinedVerticalOverlay(
+                            x + (fontSize1 / 2 + gap / 2),
+                            y,
+                        );
+                        drawVerticalText(
+                            ctx,
+                            textLine2,
+                            x - (fontSize2 / 2 + gap / 2),
+                            y,
+                            font2,
+                        );
+                    } else if (hasLine1) {
+                        drawCombinedVerticalOverlay(x, y);
+                    } else if (textLine2) {
+                        drawVerticalText(ctx, textLine2, x, y, font2);
+                    }
+                } else if (pos === "overlay-left-vertical") {
+                    const hasLine1 = prefix || textLine1Main;
+                    const gap = Math.round(textSpace * 0.1);
+                    const x = imgX + overlayInset;
+                    const y = imgY + imgH / 2;
+                    const isMetalLocal2 =
+                        isAdvancedMode() &&
+                        (textPlateStyle() === "metal-gold" ||
+                            textPlateStyle() === "metal-silver");
+                    let finalTextColorV2 = isMetalLocal2
+                        ? tColor
+                        : isAdvancedMode()
+                          ? customTextColor()
+                          : frameColor() === "white"
+                            ? "#222222"
+                            : "#e2e8f0";
+                    try {
+                        finalTextColorV2 = pickContrast(finalTextColorV2);
+                    } catch (e) {
+                        finalTextColorV2 =
+                            frameColor() === "white" ? "#000000" : "#ffffff";
+                    }
+
+                    ctx.fillStyle = finalTextColorV2;
+
+                    const drawCombinedVerticalOverlayLeft = (
+                        vx: number,
+                        vy: number,
+                    ) => {
+                        ctx.save();
+                        ctx.translate(vx, vy);
+                        ctx.rotate(Math.PI / 2);
+
+                        ctx.font = font1Prefix;
+                        const pW = prefix ? ctx.measureText(prefix).width : 0;
+                        ctx.font = font1Main;
+                        const mW = textLine1Main
+                            ? ctx.measureText(textLine1Main).width
+                            : 0;
+
+                        let sX = -(pW + mW) / 2;
+                        ctx.textAlign = "left";
+
+                        if (prefix) {
+                            ctx.font = font1Prefix;
+                            ctx.fillText(prefix, sX, 0);
+                            sX += pW;
+                        }
+                        if (textLine1Main) {
+                            ctx.font = font1Main;
+                            ctx.fillText(textLine1Main, sX, 0);
+                        }
+                        ctx.restore();
+                    };
+
+                    if (hasLine1 && textLine2) {
+                        drawCombinedVerticalOverlayLeft(
+                            x + (fontSize1 / 2 + gap / 2),
+                            y,
+                        );
+                        drawVerticalText(
+                            ctx,
+                            textLine2,
+                            x - (fontSize2 / 2 + gap / 2),
+                            y,
+                            font2,
+                        );
+                    } else if (hasLine1) {
+                        drawCombinedVerticalOverlayLeft(x, y);
+                    } else if (textLine2) {
+                        drawVerticalText(ctx, textLine2, x, y, font2);
+                    }
+                }
+
+                // For non-vertical overlays, draw using existing plate/text routine with overlay flag
+                if (!pos.includes("vertical")) {
+                    drawCombinedTextAndPlate(
+                        prefix,
+                        textLine1Main,
+                        textLine2,
+                        tx,
+                        ty,
+                        overrideAlign,
+                        maxW,
+                        true,
+                        overlayV,
+                    );
+                }
+            } else {
+                const y =
+                    framePosition() === "bottom"
+                        ? imgH + textSpace / 2 + imgY
+                        : textSpace / 2 + realFrameWidth;
+                drawCombinedTextAndPlate(
+                    prefix,
+                    textLine1Main,
+                    textLine2,
+                    getHorizontalX(),
+                    y,
+                    undefined,
+                    Math.max(100, imgW - basePadding * 2),
+                );
+            }
         }
 
         if (isRealFrame) {
@@ -1736,6 +1981,56 @@ export default function ExifFrame() {
                                             label: "右 (横)",
                                             isHorizontal: true,
                                         },
+                                        {
+                                            pos: "overlay-top-left",
+                                            align: "left",
+                                            label: "画像内・左上",
+                                            isOverlay: true,
+                                        },
+                                        {
+                                            pos: "overlay-top-center",
+                                            align: "center",
+                                            label: "画像内・上中央",
+                                            isOverlay: true,
+                                        },
+                                        {
+                                            pos: "overlay-top-right",
+                                            align: "right",
+                                            label: "画像内・右上",
+                                            isOverlay: true,
+                                        },
+                                        {
+                                            pos: "overlay-bottom-left",
+                                            align: "left",
+                                            label: "画像内・左下",
+                                            isOverlay: true,
+                                        },
+                                        {
+                                            pos: "overlay-bottom-center",
+                                            align: "center",
+                                            label: "画像内・下中央",
+                                            isOverlay: true,
+                                        },
+                                        {
+                                            pos: "overlay-bottom-right",
+                                            align: "right",
+                                            label: "画像内・右下",
+                                            isOverlay: true,
+                                        },
+                                        {
+                                            pos: "overlay-right-vertical",
+                                            align: "right",
+                                            label: "画像内・右縦文字",
+                                            isOverlay: true,
+                                            isVertical: true,
+                                        },
+                                        {
+                                            pos: "overlay-left-vertical",
+                                            align: "left",
+                                            label: "画像内・左縦文字",
+                                            isOverlay: true,
+                                            isVertical: true,
+                                        },
                                         { label: "チェキ風", isCheki: true },
                                     ]}
                                 >
@@ -1746,6 +2041,11 @@ export default function ExifFrame() {
                                             }
                                             if (isChekiMode()) {
                                                 return false;
+                                            }
+                                            if (item.isOverlay) {
+                                                return (
+                                                    framePosition() === item.pos
+                                                );
                                             }
                                             if (
                                                 item.isVertical ||
@@ -1824,6 +2124,106 @@ export default function ExifFrame() {
                                                                 }}
                                                             >
                                                                 <div class="w-2/3 h-0.5 rounded-full bg-current opacity-80"></div>
+                                                            </div>
+                                                        </div>
+                                                    </Show>
+
+                                                    <Show
+                                                        when={
+                                                            !item.isCheki &&
+                                                            item.isOverlay
+                                                        }
+                                                    >
+                                                        <div class="flex-1 bg-slate-900 overflow-hidden relative flex items-center justify-center">
+                                                            <Show
+                                                                when={uploadedImageSrc()}
+                                                                fallback={
+                                                                    <span class="text-[9px] opacity-30">
+                                                                        🖼️
+                                                                    </span>
+                                                                }
+                                                            >
+                                                                <img
+                                                                    src={uploadedImageSrc()}
+                                                                    class="w-full h-full object-cover transition-transform"
+                                                                    style={{
+                                                                        transform: `rotate(${imageRotation()}deg)`,
+                                                                    }}
+                                                                />
+                                                            </Show>
+
+                                                            <div
+                                                                class="absolute pointer-events-none"
+                                                                style={
+                                                                    item.pos ===
+                                                                    "overlay-top-left"
+                                                                        ? {
+                                                                              top: "6px",
+                                                                              left: "6px",
+                                                                          }
+                                                                        : item.pos ===
+                                                                            "overlay-top-center"
+                                                                          ? {
+                                                                                top: "6px",
+                                                                                left: "50%",
+                                                                                transform:
+                                                                                    "translateX(-50%)",
+                                                                            }
+                                                                          : item.pos ===
+                                                                              "overlay-top-right"
+                                                                            ? {
+                                                                                  top: "6px",
+                                                                                  right: "6px",
+                                                                              }
+                                                                            : item.pos ===
+                                                                                "overlay-bottom-left"
+                                                                              ? {
+                                                                                    bottom: "6px",
+                                                                                    left: "6px",
+                                                                                }
+                                                                              : item.pos ===
+                                                                                  "overlay-bottom-center"
+                                                                                ? {
+                                                                                      bottom: "6px",
+                                                                                      left: "50%",
+                                                                                      transform:
+                                                                                          "translateX(-50%)",
+                                                                                  }
+                                                                                : item.pos ===
+                                                                                    "overlay-bottom-right"
+                                                                                  ? {
+                                                                                        bottom: "6px",
+                                                                                        right: "6px",
+                                                                                    }
+                                                                                  : item.pos ===
+                                                                                      "overlay-right-vertical"
+                                                                                    ? {
+                                                                                          left: "calc(100% - 6px)",
+                                                                                          top: "50%",
+                                                                                          transform:
+                                                                                              "translate(-100%, -50%)",
+                                                                                      }
+                                                                                    : item.pos ===
+                                                                                        "overlay-left-vertical"
+                                                                                      ? {
+                                                                                            left: "6px",
+                                                                                            top: "50%",
+                                                                                            transform:
+                                                                                                "translateY(-50%)",
+                                                                                        }
+                                                                                      : {}
+                                                                }
+                                                            >
+                                                                <div
+                                                                    class={
+                                                                        item.pos ===
+                                                                            "overlay-left-vertical" ||
+                                                                        item.pos ===
+                                                                            "overlay-right-vertical"
+                                                                            ? "w-1 h-6 rounded-md bg-white/90 border border-black/20"
+                                                                            : "w-6 h-1 rounded-md bg-white/90 border border-black/20"
+                                                                    }
+                                                                ></div>
                                                             </div>
                                                         </div>
                                                     </Show>
