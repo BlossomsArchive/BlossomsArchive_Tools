@@ -280,8 +280,8 @@ export default function ExifFrame() {
             framePosition() === "left-horizontal" ||
             framePosition() === "right-horizontal";
         const sideAreaHorizontal = Math.max(
-            imgW,
-            textSpace + Math.round(longSide * 0.12),
+            Math.round(imgH * (2 / 3)),
+            textSpace + Math.round(longSide * 0.04),
         );
         const sideAreaVertical = Math.max(
             Math.round(longSide * 0.16),
