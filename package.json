@@ -8,21 +8,26 @@
     "dev": "vite",
     "build": "vite build && npx tsx scripts/generate-sitemap.ts",
     "serve": "vite preview",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
   },
   "license": "MIT",
   "devDependencies": {
+    "@solidjs/testing-library": "^0.8.10",
     "@tailwindcss/postcss": "^4.3.2",
     "@tailwindcss/vite": "^4.1.13",
+    "@testing-library/jest-dom": "^7.0.1",
     "@types/qrcode": "^1.5.6",
     "autoprefixer": "^10.5.2",
     "daisyui": "^5.6.13",
+    "jsdom": "^30.0.1",
     "postcss": "^8.5.16",
     "solid-devtools": "^0.34.3",
     "tailwindcss": "^4.1.13",
     "typescript": "^5.9.2",
     "vite": "^7.1.4",
-    "vite-plugin-solid": "^2.11.8"
+    "vite-plugin-solid": "^2.11.8",
+    "vitest": "^4.1.10"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
