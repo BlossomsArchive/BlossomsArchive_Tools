@@ -107,7 +107,7 @@ describe("ExifFrameGenerator", () => {
         expect(await screen.findByText("✨ 画像が生成されました")).toBeInTheDocument();
         const downloadLink = screen.getByText("📥 画像をダウンロードする");
         expect(downloadLink).toBeInTheDocument();
-        expect(downloadLink.getAttribute("download")).toBe("framed_test.jpeg");
+        expect(downloadLink.getAttribute("download")).toMatch(/^framed_test_\d{4}\.jpeg$/);
 
         // 自動ダウンロード用の a タグ生成・クリックが発生していないことを検証
         const anchorCalls = createElementSpy.mock.calls.filter((call) => call[0] === "a");

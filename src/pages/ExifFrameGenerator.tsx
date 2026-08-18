@@ -1315,7 +1315,8 @@ export default function ExifFrame() {
             }
         }
 
-        const downloadName = `${baseName}.${saveFormat().split("/")[1]}`;
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        const downloadName = `${baseName}_${randomNum}.${saveFormat().split("/")[1]}`;
         setDownloadImageSrc(finalDataUrl);
         setDownloadFileName(downloadName);
         setShowMobileSaveModal(true);
