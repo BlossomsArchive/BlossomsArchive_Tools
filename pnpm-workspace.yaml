@@ -2,6 +2,6 @@ allowBuilds:
   '@tailwindcss/oxide': true
   esbuild: true
 overrides:
-  seroval: '^1.5.3'
+  seroval: '^1.6.2'
 packages:
   - '.'
