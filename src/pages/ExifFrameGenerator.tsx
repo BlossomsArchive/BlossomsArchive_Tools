@@ -1280,7 +1280,7 @@ export default function ExifFrame() {
         }
     });
 
-    const handleDownload = () => {
+    const handleGenerate = () => {
         if (!canvasRef) return;
 
         let baseName = customExportName().trim();
@@ -1291,13 +1291,24 @@ export default function ExifFrame() {
         let finalDataUrl = canvasRef.toDataURL(saveFormat(), 0.95);
 
         if (
-            !useCustomTitle() &&
             keepOriginalExif() &&
             rawFileBase64Str &&
             saveFormat() === "image/jpeg"
         ) {
             try {
-                const exifDump = piexif.dump(piexif.load(rawFileBase64Str));
+                const exifObj = piexif.load(rawFileBase64Str);
+                if (exifObj["0th"]) {
+                    // キャンバス上の描画はすでに適切な向きで回転補正されているため、
+                    // 保存するExifのOrientationは「1（標準 / 0度回転）」に上書き固定する
+                    exifObj["0th"][piexif.ImageIFD.Orientation] = 1;
+                    exifObj["0th"][piexif.ImageIFD.ImageWidth] = canvasRef.width;
+                    exifObj["0th"][piexif.ImageIFD.ImageLength] = canvasRef.height;
+                }
+                if (exifObj["Exif"]) {
+                    exifObj["Exif"][piexif.ExifIFD.PixelXDimension] = canvasRef.width;
+                    exifObj["Exif"][piexif.ExifIFD.PixelYDimension] = canvasRef.height;
+                }
+                const exifDump = piexif.dump(exifObj);
                 finalDataUrl = piexif.insert(exifDump, finalDataUrl);
             } catch (exifErr) {
                 console.error("Failed to insert EXIF metadata:", exifErr);
@@ -1308,13 +1319,6 @@ export default function ExifFrame() {
         setDownloadImageSrc(finalDataUrl);
         setDownloadFileName(downloadName);
         setShowMobileSaveModal(true);
-
-        const a = document.createElement("a");
-        document.body.appendChild(a);
-        a.href = finalDataUrl;
-        a.download = downloadName;
-        a.click();
-        document.body.removeChild(a);
     };
 
     const handleFileChange = async (e: Event) => {
@@ -1472,10 +1476,10 @@ export default function ExifFrame() {
                             <Show when={hasImage()}>
                                 <button
                                     type="button"
-                                    onClick={handleDownload}
+                                    onClick={handleGenerate}
                                     class="btn btn-success text-white h-12 px-6 text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 w-full"
                                 >
-                                    📥 額縁付きで保存
+                                    ✨ 額縁付き画像を生成
                                 </button>
                                 <button
                                     type="button"
@@ -2867,7 +2871,7 @@ export default function ExifFrame() {
                     >
                         <div class="flex flex-col gap-1">
                             <h3 class="font-bold text-sm text-base-content flex items-center justify-center gap-1.5">
-                                📥 画像が生成されました
+                                ✨ 画像が生成されました
                             </h3>
                         </div>
                         <div class="w-full max-h-[55vh] overflow-hidden bg-base-200 p-2 rounded-xl flex items-center justify-center">
@@ -2880,9 +2884,9 @@ export default function ExifFrame() {
                         <a
                             href={downloadImageSrc()}
                             download={downloadFileName()}
-                            class="btn btn-secondary text-white w-full h-11 text-xs rounded-xl shadow-xs"
+                            class="btn btn-success text-white w-full h-11 text-xs rounded-xl shadow-xs flex items-center justify-center gap-1 font-bold text-sm"
                         >
-                            ダウンロード
+                            📥 画像をダウンロードする
                         </a>
 
                         <button
