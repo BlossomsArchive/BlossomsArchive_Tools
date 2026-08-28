@@ -6,7 +6,7 @@ export default function Home() {
     return (
         <div class="max-w-5xl mx-auto space-y-8">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <For each={routes.filter((r) => r.path !== "/")}>
+                <For each={routes.filter((r) => r.path !== "/" && !r.hidden)}>
                     {(route) => (
                         /* カードはただの囲み要素にする */
                         <div class="card bg-base-100 border border-base-300 shadow-sm transition-all duration-300">
