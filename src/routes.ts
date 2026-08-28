@@ -1,4 +1,11 @@
-export const routes = [
+export interface Route {
+    path: string;
+    title: string;
+    description?: string;
+    hidden?: boolean;
+}
+
+export const routes: Route[] = [
     {
         path: "/",
         title: "ホーム",
@@ -48,5 +55,15 @@ export const routes = [
         path: "/hyperfocal",
         title: "過焦点距離計算",
         description: "パンフォーカスに最適な過焦点距離を計算します",
+    },
+    {
+        path: "/privacy",
+        title: "プライバシーポリシー",
+        hidden: true,
+    },
+    {
+        path: "/credits",
+        title: "使用ライブラリ",
+        hidden: true,
     },
 ];
