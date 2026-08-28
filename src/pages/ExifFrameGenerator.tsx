@@ -2890,6 +2890,33 @@ export default function ExifFrame() {
                             📥 画像をダウンロードする
                         </a>
 
+                        {/* SNS共有ボタン */}
+                        <Show when={"share" in navigator && typeof (navigator as any).canShare === "function"}>
+                            <button
+                                type="button"
+                                class="btn btn-info text-white w-full h-11 text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 font-bold text-sm"
+                                onClick={async () => {
+                                    try {
+                                        const dataUrl = downloadImageSrc();
+                                        const fileName = downloadFileName();
+                                        const res = await fetch(dataUrl);
+                                        const blob = await res.blob();
+                                        const file = new File([blob], fileName, { type: blob.type });
+                                        if ((navigator as any).canShare({ files: [file] })) {
+                                            await navigator.share({
+                                                files: [file],
+                                                title: "EXIFフレーム生成 | BlossomsArchive Tools",
+                                            });
+                                        }
+                                    } catch (e) {
+                                        // キャンセル or 非対応は無視
+                                    }
+                                }}
+                            >
+                                📤 画像をSNSにシェアする
+                            </button>
+                        </Show>
+
                         <button
                             type="button"
                             onClick={() => setShowMobileSaveModal(false)}
