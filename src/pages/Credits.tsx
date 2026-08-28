@@ -100,7 +100,7 @@ export default function Credits() {
                 <div class="card bg-base-100 border border-base-300 shadow-sm">
                     <div class="card-body p-4 flex-row items-center justify-between">
                         <a
-                            href="https://misskey-hub.net/about/assets/"
+                            href="https://misskey-hub.net/brand-assets/"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="font-medium text-primary hover:underline"

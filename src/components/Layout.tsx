@@ -41,10 +41,12 @@ export default function Layout(props: LayoutProps) {
         return route ? route.title : "ツールダッシュボード";
     };
 
+    const getCurrentUrl = () => window.location.origin + location.pathname;
+
     const getShareText = () => {
         const baseTitle = "BlossomsArchive Tools";
         const title = location.pathname === "/" ? baseTitle : `${getHeaderTitle()} | ${baseTitle}`;
-        return title + "\n" + window.location.href;
+        return title + "\n" + getCurrentUrl();
     };
 
     createEffect(() => {
@@ -152,7 +154,7 @@ export default function Layout(props: LayoutProps) {
                                 </a>
                                 {/* Mastodon */}
                                 <a
-                                    href={`https://donshare.net/share.html?text=${encodeURIComponent(getShareText())}`}
+                                    href={`https://www.addtoany.com/add_to/mastodon?linkurl=${encodeURIComponent(getCurrentUrl())}&linkname=${encodeURIComponent(location.pathname === "/" ? "BlossomsArchive Tools" : `${getHeaderTitle()} | BlossomsArchive Tools`)}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     class="btn btn-ghost btn-square btn-sm tooltip tooltip-top"
